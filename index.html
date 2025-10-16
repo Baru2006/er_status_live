@@ -204,85 +204,56 @@
     </div>
     
     <script>
-    <script>
-    const GAS_URL 'https://script.google.com/macros/s/AKfycbwxvhR7kh_gV8q-k7nUWnK6wf7_T55_X1UK22TuaB8M5ZQYDh8wGs3VxBfubHD6zEl2Yw/exec'// Replace with your real Web App URL
-    const REFRESH_INTERVAL = 300 * 1000; // 300 seconds
+const GAS_URL = "https://script.google.com/macros/s/PASTE_YOUR_SCRIPT_ID/exec";
 
-    const ordersBody = document.getElementById('ordersBody');
-    const paymentsBody = document.getElementById('paymentsBody');
+async function fetchData() {
+  console.log("Fetching from:", GAS_URL);
+  try {
+    const response = await fetch(GAS_URL);
+    console.log("Response status:", response.status);
+    const text = await response.text();
+    console.log("Raw text:", text);
 
-    function getStatusClass(status) {
-        const s = (status || '').toLowerCase();
-        if (s === 'success') return 'status-success';
-        if (s === 'failed') return 'status-failed';
-        return 'status-pending';
+    const data = JSON.parse(text);
+    console.log("Parsed data:", data);
+
+    if (!data.orders || !data.payments) {
+      throw new Error("Invalid JSON structure");
     }
 
-    async function loadStatus() {
-  try {
-    const res = await fetch(GAS_URL);
-    const data = await res.json();
-    console.log("✅ Data loaded:", data);
-    document.getElementById("status").innerText = "Loaded successfully!";
-  } catch (err) {
-    console.error("❌ Fetch error:", err);
-    document.getElementById("status").innerText = "Error loading data.";
+    populateOrdersTable(data.orders);
+    populatePaymentsTable(data.payments);
+
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    document.getElementById("ordersBody").innerHTML =
+      `<tr><td colspan="6" class="loading" style="color:red;">❌ Failed to load (${error.message})</td></tr>`;
   }
 }
 
-loadStatus();
+function populateOrdersTable(data) {
+  const rows = data.slice(1).reverse();
+  const tbody = document.getElementById("ordersBody");
+  tbody.innerHTML = "";
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td>`;
+    tbody.appendChild(tr);
+  });
+}
 
-    function populateOrdersTable(data) {
-        const rows = data.slice(1).reverse();
-        ordersBody.innerHTML = '';
-        if (rows.length === 0) {
-            ordersBody.innerHTML = `<tr><td colspan="6" class="loading">No orders found.</td></tr>`;
-            return;
-        }
-        rows.forEach(row => {
-            const tr = document.createElement('tr');
-            const [date, userId, category, service, total, status] = row;
-            const formattedDate = new Date(date).toLocaleString('en-GB');
-            tr.innerHTML = `
-                <td>${formattedDate}</td>
-                <td>${userId}</td>
-                <td>${category}</td>
-                <td>${service}</td>
-                <td>${total} MMK</td>
-                <td><span class="status-badge ${getStatusClass(status)}">${status || 'Pending'}</span></td>
-            `;
-            ordersBody.appendChild(tr);
-        });
-    }
+function populatePaymentsTable(data) {
+  const rows = data.slice(1).reverse();
+  const tbody = document.getElementById("paymentsBody");
+  tbody.innerHTML = "";
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td>`;
+    tbody.appendChild(tr);
+  });
+}
 
-    function populatePaymentsTable(data) {
-        const rows = data.slice(1).reverse();
-        paymentsBody.innerHTML = '';
-        if (rows.length === 0) {
-            paymentsBody.innerHTML = `<tr><td colspan="7" class="loading">No payments found.</td></tr>`;
-            return;
-        }
-        rows.forEach(row => {
-            const tr = document.createElement('tr');
-            const [date, userId, from, to, amountSent, amountReceived, status] = row;
-            const formattedDate = new Date(date).toLocaleString('en-GB');
-            tr.innerHTML = `
-                <td>${formattedDate}</td>
-                <td>${userId}</td>
-                <td>${from}</td>
-                <td>${to}</td>
-                <td>${amountSent} MMK</td>
-                <td>${amountReceived} MMK</td>
-                <td><span class="status-badge ${getStatusClass(status)}">${status || 'Pending'}</span></td>
-            `;
-            paymentsBody.appendChild(tr);
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        fetchData();
-        setInterval(fetchData, REFRESH_INTERVAL);
-    });
+document.addEventListener("DOMContentLoaded", fetchData);
 </script>
 </body>
 </html>
