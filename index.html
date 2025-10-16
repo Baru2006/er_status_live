@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Status - EasyRecharge MM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff6600;
+            --accent-color: #000000;
+            --background-color: #ffffff;
+            --border-color: #e5e5e5;
+            --text-color: #333;
+            --font-family: 'Poppins', sans-serif;
+            --status-pending: #999;
+            --status-success: #00cc66;
+            --status-failed: #ff3333;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: var(--background-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        header h1 {
+            color: var(--accent-color);
+            margin: 0;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .logo {
+            width: 30px;
+            height: 30px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+        }
+        
+        .nav-links {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-links a.active, .nav-links a:hover {
+            background-color: rgba(255, 102, 0, 0.1);
+        }
+
+        .table-container {
+            background-color: var(--background-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .table-container h2 {
+            margin-top: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        thead tr {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th {
+            font-weight: 500;
+        }
+
+        tbody tr:nth-of-type(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            color: white;
+            font-size: 12px;
+            display: inline-block;
+        }
+        .status-pending { background-color: var(--status-pending); }
+        .status-success { background-color: var(--status-success); }
+        .status-failed { background-color: var(--status-failed); }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        @media (max-width: 600px) {
+             body { padding: 10px; }
+             th, td { padding: 8px 10px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1><div class="logo"></div> EasyRecharge MM</h1>
+            <nav class="nav-links">
+                <a href="order.html">Order</a>
+                <a href="paytopay.html">P2P Transfer</a>
+                <a href="status.html" class="active">Status</a>
+            </nav>
+        </header>
+
+        <div class="table-container">
+            <h2>Orders Status</h2>
+            <div class="table-wrapper">
+                <table id="ordersTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>User ID</th>
+                            <th>Category</th>
+                            <th>Service</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersBody">
+                        <tr><td colspan="6" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h2>Pay-To-Pay Status</h2>
+            <div class="table-wrapper">
+                <table id="paymentsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>User ID</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Amount Sent</th>
+                            <th>Amount Received</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsBody">
+                       <tr><td colspan="7" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxBvHw1n76vONXb8uoIZaUGYwx0Osj_NnBXG54yx2XX-FNuqg5QKg3W2m_KBtGEQW5AYQ/exec'; // IMPORTANT: Replace with your GAS URL
+        const REFRESH_INTERVAL = 300 * 1000; // 300 seconds
+
+        const ordersBody = document.getElementById('ordersBody');
+        const paymentsBody = document.getElementById('paymentsBody');
+
+        function getStatusClass(status) {
+            const s = (status || '').toLowerCase();
+            if (s === 'success') return 'status-success';
+            if (s === 'failed') return 'status-failed';
+            return 'status-pending'; // Default for Pending or anything else
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(GAS_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                populateOrdersTable(data.orders);
+                populatePaymentsTable(data.payments);
+
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                ordersBody.innerHTML = `<tr><td colspan="6" class="loading" style="color:var(--status-failed);">Failed to load data.</td></tr>`;
+                paymentsBody.innerHTML = `<tr><td colspan="7" class="loading" style="color:var(--status-failed);">Failed to load data.</td></tr>`;
+            }
+        }
+        
+        function populateOrdersTable(data) {
+            // Skip header row (index 0) and reverse to show newest first
+            const rows = data.slice(1).reverse();
+            ordersBody.innerHTML = ''; // Clear existing data or loading text
+
+            if (rows.length === 0) {
+                 ordersBody.innerHTML = `<tr><td colspan="6" class="loading">No orders found.</td></tr>`;
+                 return;
+            }
+
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                const [date, userId, category, service, total, status] = row;
+
+                const formattedDate = new Date(date).toLocaleString('en-GB');
+
+                tr.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${userId}</td>
+                    <td>${category}</td>
+                    <td>${service}</td>
+                    <td>${total} MMK</td>
+                    <td><span class="status-badge ${getStatusClass(status)}">${status || 'Pending'}</span></td>
+                `;
+                ordersBody.appendChild(tr);
+            });
+        }
+        
+        function populatePaymentsTable(data) {
+            // Skip header row and reverse
+            const rows = data.slice(1).reverse();
+            paymentsBody.innerHTML = '';
+
+            if (rows.length === 0) {
+                 paymentsBody.innerHTML = `<tr><td colspan="7" class="loading">No payments found.</td></tr>`;
+                 return;
+            }
+
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                const [date, userId, from, to, amountSent, amountReceived, status] = row;
+                
+                const formattedDate = new Date(date).toLocaleString('en-GB');
+
+                tr.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${userId}</td>
+                    <td>${from}</td>
+                    <td>${to}</td>
+                    <td>${amountSent} MMK</td>
+                    <td>${amountReceived} MMK</td>
+                    <td><span class="status-badge ${getStatusClass(status)}">${status || 'Pending'}</span></td>
+                `;
+                paymentsBody.appendChild(tr);
+            });
+        }
+        
+        // Initial fetch and set interval for auto-refresh
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            setInterval(fetchData, REFRESH_INTERVAL);
+        });
+    </script>
+</body>
+</html>
+
+                                                                             
