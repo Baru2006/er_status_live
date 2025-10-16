@@ -204,100 +204,86 @@
     </div>
     
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxBvHw1n76vONXb8uoIZaUGYwx0Osj_NnBXG54yx2XX-FNuqg5QKg3W2m_KBtGEQW5AYQ/exec'; // IMPORTANT: Replace with your GAS URL
-        const REFRESH_INTERVAL = 300 * 1000; // 300 seconds
+    <script>
+    const GAS_URL ='https://script.google.com/macros/s/AKfycbzxQObQnLKHVTiTsndLp8O_A-7EyzI2UE918WXdU5I13hoZ8dPWMx4EWPvKz3zBK-8KSg/exec'; // Replace with your real Web App URL
+    const REFRESH_INTERVAL = 300 * 1000; // 300 seconds
 
-        const ordersBody = document.getElementById('ordersBody');
-        const paymentsBody = document.getElementById('paymentsBody');
+    const ordersBody = document.getElementById('ordersBody');
+    const paymentsBody = document.getElementById('paymentsBody');
 
-        function getStatusClass(status) {
-            const s = (status || '').toLowerCase();
-            if (s === 'success') return 'status-success';
-            if (s === 'failed') return 'status-failed';
-            return 'status-pending'; // Default for Pending or anything else
+    function getStatusClass(status) {
+        const s = (status || '').toLowerCase();
+        if (s === 'success') return 'status-success';
+        if (s === 'failed') return 'status-failed';
+        return 'status-pending';
+    }
+
+    async function fetchData() {
+        try {
+            const response = await fetch(GAS_URL);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            populateOrdersTable(data.orders);
+            populatePaymentsTable(data.payments);
+        } catch (error) {
+            console.error("Failed to fetch data:", error);
+            ordersBody.innerHTML = `<tr><td colspan="6" class="loading" style="color:var(--status-failed);">Failed to load data.</td></tr>`;
+            paymentsBody.innerHTML = `<tr><td colspan="7" class="loading" style="color:var(--status-failed);">Failed to load data.</td></tr>`;
         }
+    }
 
-        async function fetchData() {
-            try {
-                const response = await fetch(GAS_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                populateOrdersTable(data.orders);
-                populatePaymentsTable(data.payments);
-
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
-                ordersBody.innerHTML = `<tr><td colspan="6" class="loading" style="color:var(--status-failed);">Failed to load data.</td></tr>`;
-                paymentsBody.innerHTML = `<tr><td colspan="7" class="loading" style="color:var(--status-failed);">Failed to load data.</td></tr>`;
-            }
+    function populateOrdersTable(data) {
+        const rows = data.slice(1).reverse();
+        ordersBody.innerHTML = '';
+        if (rows.length === 0) {
+            ordersBody.innerHTML = `<tr><td colspan="6" class="loading">No orders found.</td></tr>`;
+            return;
         }
-        
-        function populateOrdersTable(data) {
-            // Skip header row (index 0) and reverse to show newest first
-            const rows = data.slice(1).reverse();
-            ordersBody.innerHTML = ''; // Clear existing data or loading text
-
-            if (rows.length === 0) {
-                 ordersBody.innerHTML = `<tr><td colspan="6" class="loading">No orders found.</td></tr>`;
-                 return;
-            }
-
-            rows.forEach(row => {
-                const tr = document.createElement('tr');
-                const [date, userId, category, service, total, status] = row;
-
-                const formattedDate = new Date(date).toLocaleString('en-GB');
-
-                tr.innerHTML = `
-                    <td>${formattedDate}</td>
-                    <td>${userId}</td>
-                    <td>${category}</td>
-                    <td>${service}</td>
-                    <td>${total} MMK</td>
-                    <td><span class="status-badge ${getStatusClass(status)}">${status || 'Pending'}</span></td>
-                `;
-                ordersBody.appendChild(tr);
-            });
-        }
-        
-        function populatePaymentsTable(data) {
-            // Skip header row and reverse
-            const rows = data.slice(1).reverse();
-            paymentsBody.innerHTML = '';
-
-            if (rows.length === 0) {
-                 paymentsBody.innerHTML = `<tr><td colspan="7" class="loading">No payments found.</td></tr>`;
-                 return;
-            }
-
-            rows.forEach(row => {
-                const tr = document.createElement('tr');
-                const [date, userId, from, to, amountSent, amountReceived, status] = row;
-                
-                const formattedDate = new Date(date).toLocaleString('en-GB');
-
-                tr.innerHTML = `
-                    <td>${formattedDate}</td>
-                    <td>${userId}</td>
-                    <td>${from}</td>
-                    <td>${to}</td>
-                    <td>${amountSent} MMK</td>
-                    <td>${amountReceived} MMK</td>
-                    <td><span class="status-badge ${getStatusClass(status)}">${status || 'Pending'}</span></td>
-                `;
-                paymentsBody.appendChild(tr);
-            });
-        }
-        
-        // Initial fetch and set interval for auto-refresh
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchData();
-            setInterval(fetchData, REFRESH_INTERVAL);
+        rows.forEach(row => {
+            const tr = document.createElement('tr');
+            const [date, userId, category, service, total, status] = row;
+            const formattedDate = new Date(date).toLocaleString('en-GB');
+            tr.innerHTML = `
+                <td>${formattedDate}</td>
+                <td>${userId}</td>
+                <td>${category}</td>
+                <td>${service}</td>
+                <td>${total} MMK</td>
+                <td><span class="status-badge ${getStatusClass(status)}">${status || 'Pending'}</span></td>
+            `;
+            ordersBody.appendChild(tr);
         });
-    </script>
+    }
+
+    function populatePaymentsTable(data) {
+        const rows = data.slice(1).reverse();
+        paymentsBody.innerHTML = '';
+        if (rows.length === 0) {
+            paymentsBody.innerHTML = `<tr><td colspan="7" class="loading">No payments found.</td></tr>`;
+            return;
+        }
+        rows.forEach(row => {
+            const tr = document.createElement('tr');
+            const [date, userId, from, to, amountSent, amountReceived, status] = row;
+            const formattedDate = new Date(date).toLocaleString('en-GB');
+            tr.innerHTML = `
+                <td>${formattedDate}</td>
+                <td>${userId}</td>
+                <td>${from}</td>
+                <td>${to}</td>
+                <td>${amountSent} MMK</td>
+                <td>${amountReceived} MMK</td>
+                <td><span class="status-badge ${getStatusClass(status)}">${status || 'Pending'}</span></td>
+            `;
+            paymentsBody.appendChild(tr);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchData();
+        setInterval(fetchData, REFRESH_INTERVAL);
+    });
+</script>
 </body>
 </html>
 
