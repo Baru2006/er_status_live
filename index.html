@@ -205,7 +205,7 @@
     
     <script>
     <script>
-    const GAS_URL 'https://script.google.com/macros/s/AKfycbwYYeFBUVz0d3B4MNok4dYO-YTmwob6MzKMw58o1p9DzbZy826I_Woe_hmU59FKLbiHKg/exec'// Replace with your real Web App URL
+    const GAS_URL 'https://script.google.com/macros/s/AKfycbzUO4xhlK_XaJSBNHuxsKoH7AkJlMBxRVH4GlwOsf2TzEYU8tDi3BkkWJCvxwRJGYP6yg/exec'// Replace with your real Web App URL
     const REFRESH_INTERVAL = 300 * 1000; // 300 seconds
 
     const ordersBody = document.getElementById('ordersBody');
@@ -218,19 +218,19 @@
         return 'status-pending';
     }
 
-    async function fetchData() {
-        try {
-            const response = await fetch(GAS_URL);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.json();
-            populateOrdersTable(data.orders);
-            populatePaymentsTable(data.payments);
-        } catch (error) {
-            console.error("Failed to fetch data:", error);
-            ordersBody.innerHTML = `<tr><td colspan="6" class="loading" style="color:var(--status-failed);">Failed to load data.</td></tr>`;
-            paymentsBody.innerHTML = `<tr><td colspan="7" class="loading" style="color:var(--status-failed);">Failed to load data.</td></tr>`;
-        }
-    }
+    async function loadStatus() {
+  try {
+    const res = await fetch(GAS_URL);
+    const data = await res.json();
+    console.log("✅ Data loaded:", data);
+    document.getElementById("status").innerText = "Loaded successfully!";
+  } catch (err) {
+    console.error("❌ Fetch error:", err);
+    document.getElementById("status").innerText = "Error loading data.";
+  }
+}
+
+loadStatus();
 
     function populateOrdersTable(data) {
         const rows = data.slice(1).reverse();
