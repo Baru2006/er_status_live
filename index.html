@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Status - EasyRecharge MM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff6600;
+            --background-color: #f4f4f9;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --border-color: #e5e5e5;
+            --font-family: 'Poppins', sans-serif;
+            --status-pending: #999;
+            --status-success: #00cc66;
+            --status-failed: #ff3333;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        header p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .table-container {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .table-container h2 {
+            margin-top: 0;
+            font-size: 22px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        thead tr {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th {
+            font-weight: 500;
+        }
+
+        tbody tr:nth-of-type(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            text-transform: capitalize;
+        }
+        .status-pending { background-color: var(--status-pending); }
+        .status-success { background-color: var(--status-success); }
+        .status-failed { background-color: var(--status-failed); }
+        
+        .loading, .error {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+        .error {
+            color: var(--status-failed);
+        }
+        
+        #lastUpdated {
+            text-align: right;
+            font-size: 12px;
+            color: #777;
+            margin-top: -10px;
+            padding-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+             body { padding: 10px; }
+             .table-container { padding: 15px; }
+             th, td { padding: 10px; font-size: 12px; }
+             header h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Live System Status</h1>
+            <p>Displaying real-time data from our services.</p>
+        </header>
+
+        <div class="table-container">
+            <h2><span style="color: var(--primary-color);">●</span> Order Status</h2>
+            <p id="lastUpdatedOrders"></p>
+            <div class="table-wrapper">
+                <table id="ordersTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>User ID</th>
+                            <th>Category</th>
+                            <th>Service</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersBody">
+                        <tr><td colspan="6" class="loading">Loading order data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h2><span style="color: var(--primary-color);">●</span> Pay-to-Pay Status</h2>
+            <p id="lastUpdatedPayments"></p>
+            <div class="table-wrapper">
+                <table id="paymentsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>User ID</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Amount Sent</th>
+                            <th>Amount Received</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsBody">
+                       <tr><td colspan="7" class="loading">Loading payment data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // --- CONFIGURATION ---
+        const GITHUB_USERNAME = "Baru2006"; // Replace with your GitHub username
+        const REPO_NAME = "order_tracker"; // Replace with your repository name
+        const DATA_FILE_PATH = "data.json"; // Path to your data file
+        
+        const DATA_URL = `https://raw.githubusercontent.com/Baru2006/order_tracker/main/data.json`;
+        const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+        // --- DOM ELEMENTS ---
+        const ordersBody = document.getElementById('ordersBody');
+        const paymentsBody = document.getElementById('paymentsBody');
+        const lastUpdatedOrdersEl = document.getElementById('lastUpdatedOrders');
+        const lastUpdatedPaymentsEl = document.getElementById('lastUpdatedPayments');
+        
+        /**
+         * Fetches and renders the data from the GitHub JSON file.
+         */
+        async function fetchData() {
+            try {
+                // Add a cache-busting parameter to ensure we get the latest file
+                const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
+                if (!response.ok) {
+                    throw new Error(`Could not fetch data. Status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                populateOrdersTable(data.orders);
+                populatePaymentsTable(data.payments);
+
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                const errorMessage = `<tr><td colspan="7" class="error">Failed to load data. Please check the console.</td></tr>`;
+                ordersBody.innerHTML = errorMessage;
+                paymentsBody.innerHTML = errorMessage;
+            }
+        }
+        
+        /**
+         * Populates the orders table with data.
+         * @param {Array<Object>} orders The array of order objects.
+         */
+        function populateOrdersTable(orders) {
+            ordersBody.innerHTML = ''; // Clear existing data
+
+            if (!orders || orders.length === 0) {
+                 ordersBody.innerHTML = `<tr><td colspan="6" class="loading">No orders found.</td></tr>`;
+                 return;
+            }
+            
+            // Show newest first
+            orders.reverse().forEach(row => {
+                const tr = document.createElement('tr');
+                const formattedDate = new Date(row.Date).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
+                const status = row.Status || 'Pending';
+                
+                tr.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${row.UserID}</td>
+                    <td>${row.Category}</td>
+                    <td>${row.Service}</td>
+                    <td>${row.Total}</td>
+                    <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
+                `;
+                ordersBody.appendChild(tr);
+            });
+            updateTimestamp(lastUpdatedOrdersEl);
+        }
+        
+        /**
+         * Populates the payments table with data.
+         * @param {Array<Object>} payments The array of payment objects.
+         */
+        function populatePaymentsTable(payments) {
+            paymentsBody.innerHTML = ''; // Clear existing data
+
+            if (!payments || payments.length === 0) {
+                 paymentsBody.innerHTML = `<tr><td colspan="7" class="loading">No payments found.</td></tr>`;
+                 return;
+            }
+            
+            // Show newest first
+            payments.reverse().forEach(row => {
+                const tr = document.createElement('tr');
+                const formattedDate = new Date(row.Date).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
+                const status = row.Status || 'Pending';
+
+                tr.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${row.UserID}</td>
+                    <td>${row.From}</td>
+                    <td>${row.To}</td>
+                    <td>${row.AmountSent}</td>
+                    <td>${row.AmountReceived || 'N/A'}</td>
+                    <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
+                `;
+                paymentsBody.appendChild(tr);
+            });
+            updateTimestamp(lastUpdatedPaymentsEl);
+        }
+
+        /**
+         * Updates the "Last updated" timestamp element.
+         * @param {HTMLElement} element The DOM element to update.
+         */
+        function updateTimestamp(element) {
+             const now = new Date();
+             element.textContent = `Last updated: ${now.toLocaleTimeString('en-US')}`;
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData(); // Initial fetch on page load
+            setInterval(fetchData, REFRESH_INTERVAL); // Set up auto-refresh
+        });
+    </script>
+</body>
+</html>
+
+                                        
